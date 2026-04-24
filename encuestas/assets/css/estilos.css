@@ -1,0 +1,75 @@
+@font-face {
+  font-family: Novel;
+  src: url(../fonts/NovelDisplay-Regular.ttf);
+}
+
+@font-face {
+  font-family: NovelBlack;
+  src: url(../fonts/NovelDisplay-Black.ttf);
+}
+
+body {
+  font-family: Novel;
+}
+
+h1, h2, h3, h4, h5, h6, button[type=submit] {
+  font-family: NovelBlack;
+}
+
+.bg-gris-oscuro {
+  background-color: #595D64;
+}
+
+.text-gris-oscuro {
+  color: #595D64;
+}
+
+.text-gris {
+  color: #D3D3D3;
+}
+
+.text-amarillo {
+  color: #D1992A;
+}
+
+hr {
+  border-top: 10px solid #D1992A;
+}
+
+.img-logo {
+  width: 25%;
+}
+
+.bloqueado {
+  background-color: #D1992A;
+}
+
+.rating-puntos input {
+	display: none;
+}
+
+.rating-puntos label {
+	cursor: pointer;
+	display: inline-block;
+	height: 30px;
+	width: 30px;
+	background: #D3D3D3;
+	z-index: 2;
+  padding-left: 6px;
+  padding-top: 6px;
+}
+
+.rating-puntos input:checked + label {
+	background: #595D64;
+  color: #FFF;
+}
+
+.rating-puntos label:not(:last-child) {
+  border-right: 1px solid black;
+}
+
+@media(max-width: 767px) {
+  .img-logo {
+    width: 50%;
+  }
+}
