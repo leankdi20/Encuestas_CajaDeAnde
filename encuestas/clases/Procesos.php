@@ -358,7 +358,6 @@ class Procesos {
       
       if (!$_SESSION["dev"]) Procesos::enviar_correos($conn, $enc, $correos, $cedula, $nombre, 
                                                       $respuesta_id);
-      if ($_SESSION["dev"]) echo "Debe enviar correos a: " . $correos;
     } catch (Exception $e) {
       sqlsrv_rollback($conn);
       $ret["mensaje"] = $e->getMessage();

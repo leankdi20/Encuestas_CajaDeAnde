@@ -2,7 +2,12 @@
 
 
 session_start();
-$_SESSION["dev"] = false;
+
+$host_actual = $_SERVER["HTTP_HOST"] ?? $_SERVER["SERVER_NAME"] ?? "";
+$host_actual = strtolower(explode(":", $host_actual)[0]);
+$es_entorno_local = in_array($host_actual, array("localhost", "127.0.0.1", "::1", ""));
+
+$_SESSION["dev"] = $es_entorno_local;
 
 
 define("ENC_CYPHER_VAL",	"AES-128-CTR");
@@ -12,10 +17,16 @@ define("ENC_KEY", 			 	"JavaTpoint");
 //$db_hostname = 'DBWEBPROD-VSRV1\SQLSERVERWEB';
 //$db_hostname = '192.168.1.84\SQLSERVERWEB';
 //$db_hostname = 'WEBDESDB-VSRV1\SQLSERVERWEBCERT';
-$db_hostname = 'DBWEBPROD-SRV';
+// $db_hostname = 'DBWEBPROD-SRV';
+// $db_database = 'encuestas_db';
+// $db_username = 'encuestas';
+// $db_password = openssl_decrypt("8b8g7zNjyLI6bBzm71Q=", ENC_CYPHER_VAL, ENC_KEY);
+// $mensajeDB = "";
+
+$db_hostname = 'SQLWD-VSRV3';
 $db_database = 'encuestas_db';
-$db_username = 'encuestas';
-$db_password = openssl_decrypt("8b8g7zNjyLI6bBzm71Q=", ENC_CYPHER_VAL, ENC_KEY);
+$db_username = 'forms_desa';
+$db_password = 'SoporteForms26$';
 $mensajeDB = "";
 /* BASE DE DATOS */
 

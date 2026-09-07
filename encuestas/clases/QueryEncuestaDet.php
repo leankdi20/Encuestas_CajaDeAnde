@@ -138,12 +138,22 @@ class QueryEncuestaDet {
     if ($ret != "") $ret .= " dep_alguien='1' ";
     return $ret;
   }
+
+  private function getOpcionesActivas() {
+    $opciones_activas = array();
+
+    foreach ($this->encuesta_det["opciones"] as $opcion) {
+      if ($opcion["activo"] == "1") array_push($opciones_activas, $opcion);
+    }
+
+    return $opciones_activas;
+  }
     
   public function cargaNumero() { 
     $min = " min='" . ($this->meta[META_MIN] ?? 0) . "' ";
     $max = " max='" . ($this->meta[META_MAX] ?? 100000000) . "' ";
     $step = " step='" . ($this->meta[META_STEP] ?? 1) . "' ";
-		$placeholder = ($this->det_placeholder == "") ? "Número" : $this->det_placeholder;
+		$placeholder = ($this->det_placeholder == "") ? "N&uacute;mero" : $this->det_placeholder;
     
     return "
               <div class='col-12 col-md-6'>
@@ -159,7 +169,7 @@ class QueryEncuestaDet {
   public function cargaMonto() { 
     $min = "min='0'";
     $step = "step='0.01'";
-		$placeholder = ($this->det_placeholder == "") ? "Número" : $this->det_placeholder;
+		$placeholder = ($this->det_placeholder == "") ? "N&uacute;mero" : $this->det_placeholder;
     
     return "
               <div class='col-12 col-md-6'>
@@ -239,14 +249,14 @@ class QueryEncuestaDet {
   public function cargaSeleccionUnicaCombo() { // AUN NO VALIDAMOS ESTA OPCION (LA OPCION DE OTRO NO ESTA)
     $ret = "";
     $opciones = $this->encuesta_det["opciones"];
-    $dis = $encuesta["puesto_oblig"] == 1 ? "disabled hidden" : "";
+    $dis = $this->det_requerido != "" ? "disabled hidden" : "";
     $tiene_otro = false;
     
     $ret .= "
               <div class='col-12 col-md-6'>
                 <p class='mb-0'>" . $this->num_pregunta_texto . $this->det_requerido_ast . $this->det_enunciado . "</p>
                 <select class='form-control' name='" . $this->det_nom . "' " . $this->det_requerido . ">
-                  <option " . $dis . " selected value=''>-- Seleccione una opción --</option>";
+                  <option " . $dis . " selected value=''>-- Seleccione una opci&oacute;n --</option>";
     foreach ($opciones as $opcion) {
 			$sel = $opcion["seleccionada"] == 1 ? " selected " : "";
 			
@@ -273,119 +283,109 @@ class QueryEncuestaDet {
   
   public function cargaSeleccionUnicaRadio() { // Estetica sin revisar
     $ret = "";
-    $opciones = $this->encuesta_det["opciones"];
+    $opciones = $this->getOpcionesActivas();
     $tiene_otro = false;
     $name_otro = Funciones::name_otro($this->det_nom);
     $name_capa_otro = "capa_" . $name_otro;
-    
+
     foreach ($opciones as $opcion) {
-      if ($opcion["activo"] == "1") {
-        if ($opcion["otro"] == 1) $tiene_otro = true;
-      }
+      if ($opcion["otro"] == 1) $tiene_otro = true;
     }
-    
+
+    $on_change = " onchange='seleccionarOpcionLista(this, \"".$this->det_id."\", \"".$name_capa_otro."\", \"".$name_otro."\")' ";
+
     $ret .= "
-              <div class='col-12'>
-                <p class='mb-0'>" . $this->num_pregunta_texto . $this->det_requerido_ast . $this->det_enunciado . "</p>";
-    $cont_opc = 1;
-    $count_opc = count($opciones);
+              <div class='col-12 col-md-8'>
+                <div class='form-group'>
+                  <label>" . $this->num_pregunta_texto . $this->det_requerido_ast . $this->det_enunciado . "</label>
+                  <select class='form-control' name='" . $this->det_nom . "' " . $this->det_requerido . $on_change . ">
+                    <option disabled selected hidden value=''>Seleccione una opci&oacute;n</option>";
     foreach ($opciones as $opcion) {
       $opcion_id = $opcion["encuesta_det_opcion_id"];
-			$chk = $opcion["seleccionada"] == 1 ? " checked " : "";
-      
-      if ($opcion["activo"] == "1") {
-        if ($tiene_otro) {
-          // _ot para la opcion de otro, _no para las opciones normales
-          $opc_js_id = $opcion["encuesta_det_opcion_id"] . ($opcion["otro"] == 1 ? "_ot" : "_no"); 
-          $opc_js_id_texto = " id='" . $opc_js_id . "' "; 
-          
-          $on_click = " onclick='mostrarOtroSelUni(\"".$this->det_id."\", \"".$opcion_id."\", \"".$opc_js_id."\", \"".$name_capa_otro."\", \"".$name_otro."\")' ";
-        } else {
-          $opc_js_id_texto = "";
-          $on_click = " onclick='mostrarOtrasPreguntas(\"".$this->det_id."\", \"".$opcion_id."\")' ";
-        }
-        
-        $req = ($cont_opc == $count_opc) ? $this->det_requerido : "";
-        
-        $ret .= "
-                  <div class='form-check form-check-inline'>
-                    <input class='form-check-input' type='radio' " . $opc_js_id_texto . $on_click . " name='" . $this->det_nom . "' 
-                           value='" . $opcion_id . "' " . $chk . $req . ">
-                    <label class='form-check-label'>" . $opcion["texto"] . "</label>
-                  </div>";
-        
-        $cont_opc += 1;
-      }
+      $sel = $opcion["seleccionada"] == 1 ? " selected " : "";
+      $otro_attr = $opcion["otro"] == 1 ? " data-otro='1' " : " data-otro='0' ";
+
+      $ret .= "
+                    <option value='" . $opcion_id . "' " . $sel . $otro_attr . ">" . $opcion["texto"] . "</option>";
     }
-    
+    $ret .= "
+                  </select>";
+
     if ($tiene_otro) {
       $ret .= "
-                <div class='form-check form-check-inline' id='" . $name_capa_otro . "' style='display: none'>
-                  <input class='form-control' type='text' id='" . $name_otro . "' name='" . $name_otro . "'  maxlength='255'>
-                </div>";
+                  <div id='" . $name_capa_otro . "' class='mt-3' style='display: none'>
+                    <input class='form-control' type='text' id='" . $name_otro . "' name='" . $name_otro . "' maxlength='255' placeholder='Especifique su respuesta'>
+                  </div>";
     }
-    
-    $ret .= "
+
+    $ret .= $this->getHtmlTextoDescripcion() . "
+                </div>
               </div>";
-              
+
     return $ret;
   }
   
   public function cargaSeleccionMultiple() { // Estetica sin revisar
     $ret = "";
-    $opciones = $this->encuesta_det["opciones"];
-//    $on_click = ($this->det_requerido == "") ? "" : " onclick='validarSelMul(\"".$this->det_nom."\")' ";
+    $opciones = $this->getOpcionesActivas();
     $tiene_otro = false;
     $name_otro = Funciones::name_otro($this->det_nom);
     $name_capa_otro = "capa_" . $name_otro;
-    
+    $dropdown_id = "dropdown_" . $this->det_nom;
+    $summary_id = "summary_" . $this->det_nom;
+
     foreach ($opciones as $opcion) {
-      if ($opcion["activo"] == "1") {
-        if ($opcion["otro"] == 1) $tiene_otro = true;
-      }
+      if ($opcion["otro"] == 1) $tiene_otro = true;
     }
-    
+
     $ret .= "
-              <div class='col-12'>
-                <p class='mb-0'>" . $this->num_pregunta_texto . $this->det_requerido_ast . $this->det_enunciado . "</p>";
+              <div class='col-12 col-md-8'>
+                <div class='form-group'>
+                  <label>" . $this->num_pregunta_texto . $this->det_requerido_ast . $this->det_enunciado . "</label>
+                  <div class='survey-multiselect' data-multiselect data-multiselect-name='" . $this->det_nom . "'>
+                    <button type='button' class='survey-multiselect__trigger' onclick='toggleMultiSelect(\"".$dropdown_id."\")' aria-expanded='false'>
+                      <span id='" . $summary_id . "' class='survey-multiselect__summary'>Seleccione una o varias opciones</span>
+                    </button>
+                    <div id='" . $dropdown_id . "' class='survey-multiselect__menu d-none'>";
     foreach ($opciones as $opcion) {
-      if ($opcion["activo"] == "1") {
-        $opc_bloq = $opcion["bloquea_otras"];
-        
-        if ($opcion["otro"] == 1) {
-          $opc_js_id = $opcion["encuesta_det_opcion_id"] . "_ot";
-          $opc_js_id_texto = " id='" . $opc_js_id . "' "; 
-          
-          if ($this->det_requerido == "") {
-            $on_click = " onclick='mostrarOtroSelMul(\"".$opc_js_id."\", \"".$name_capa_otro."\", \"".$name_otro."\", ".$opc_bloq.")' ";
-          } else {
-            $on_click = " onclick='validarSelMulMostrarOtro(\"".$this->det_nom."\", \"".$opc_js_id."\", \"".$name_capa_otro."\", \"".$name_otro."\", ".$opc_bloq.")' ";
-          }
-        } else {
-          $opc_js_id = $opcion["encuesta_det_opcion_id"];
-          $opc_js_id_texto = " id='" . $opc_js_id . "' "; 
-          
-          $on_click = ($this->det_requerido == "") ? "" : " onclick='validarSelMul(\"".$this->det_nom."\", \"".$opc_js_id."\", \"".$name_capa_otro."\", \"".$name_otro."\", ".$opc_bloq.")' ";
-        }
-        
-        $ret .= "
-                <div class='form-check form-check-inline'>
-                  <input class='form-check-input " . $this->det_nom . "' type='checkbox' " . $opc_js_id_texto . $on_click . " name='" . $this->det_nom . "[]' value='" . $opcion["encuesta_det_opcion_id"] . "' " . $this->det_requerido . " " . $on_click . ">
-                  <label class='form-check-label'>" . $opcion["texto"] . "</label>
-                </div>";
-      }
+      $sel = $opcion["seleccionada"] == 1 ? " checked " : "";
+      $otro_attr = $opcion["otro"] == 1 ? " data-otro='1' " : " data-otro='0' ";
+
+      $ret .= "
+                      <label class='survey-multiselect__option'>
+                        <input type='checkbox' value='" . $opcion["encuesta_det_opcion_id"] . "' " . $sel . $otro_attr . "
+                               onchange='sincronizarSeleccionMultiple(\"".$this->det_nom."\", \"".$summary_id."\", \"".$name_capa_otro."\", \"".$name_otro."\")'>
+                        <span>" . $opcion["texto"] . "</span>
+                      </label>";
     }
-    
+    $ret .= "
+                    </div>
+                    <select class='form-control form-control--multiple d-none' id='hidden_" . $this->det_nom . "' name='" . $this->det_nom . "[]' multiple " .
+                            ($this->det_requerido != "" ? " required " : "") .
+                            " onchange='seleccionarOpcionesListaMultiple(this, \"".$name_capa_otro."\", \"".$name_otro."\")'>";
+    foreach ($opciones as $opcion) {
+      $sel = $opcion["seleccionada"] == 1 ? " selected " : "";
+      $otro_attr = $opcion["otro"] == 1 ? " data-otro='1' " : " data-otro='0' ";
+
+      $ret .= "
+                    <option value='" . $opcion["encuesta_det_opcion_id"] . "' " . $sel . $otro_attr . ">" . $opcion["texto"] . "</option>";
+    }
+    $ret .= "
+                    </select>
+                  </div>
+                  <small>Puede seleccionar una o varias opciones desde el desplegable.</small>";
+
     if ($tiene_otro) {
       $ret .= "
-                <div class='form-check form-check-inline' id='" . $name_capa_otro . "' style='display: none'>
-                  <input class='form-control' type='text' id='" . $name_otro . "' name='" . $name_otro . "'  maxlength='255'>
-                </div>";
+                  <div id='" . $name_capa_otro . "' class='mt-3' style='display: none'>
+                    <input class='form-control' type='text' id='" . $name_otro . "' name='" . $name_otro . "' maxlength='255' placeholder='Especifique su respuesta'>
+                  </div>";
     }
-    
+
     $ret .= "
+                </div>
               </div>";
-              
+
     return $ret;
   }
   
@@ -396,19 +396,20 @@ class QueryEncuestaDet {
     $meta_max = $this->meta[META_MAX] ?? 10;
     
     $ret .= "
-              <div class='col-12'>
-                <p class='mb-0'>" . $this->num_pregunta_texto . $this->det_requerido_ast . $this->det_enunciado . "</p>";
+              <div class='col-12 col-md-6'>
+                <div class='form-group'>
+                  <label>" . $this->num_pregunta_texto . $this->det_requerido_ast . $this->det_enunciado . "</label>
+                  <select class='form-control' name='".$this->det_nom."' ".$this->det_requerido.">
+                    <option disabled selected hidden value=''>Seleccione una opci&oacute;n</option>";
     $cont_meta = $meta_min;
     while ($cont_meta <= $meta_max) {
       $ret .= "
-                <div class='form-check form-check-inline'>
-                  <input class='form-check-input' type='radio' name='".$this->det_nom."' 
-                         value='".$cont_meta."' ".($cont_meta == $meta_min ? $this->det_requerido : "").">
-                  <label class='form-check-label'>".$cont_meta."</label>
-                </div>";
+                    <option value='".$cont_meta."'>".$cont_meta."</option>";
       $cont_meta += 1;
     }
     $ret .= "
+                  </select>
+                </div>
               </div>";
               
     return $ret;
@@ -442,21 +443,21 @@ class QueryEncuestaDet {
     $meta_max = $this->meta[META_MAX] ?? 10;
     
     $ret .= "
-              <div class='col-12'>
-                <p class='mb-0'>" . $this->num_pregunta_texto . $this->det_requerido_ast . $this->det_enunciado . "</p>
-                <div class='rating-puntos d-flex'>";
+              <div class='col-12 col-md-6'>
+                <div class='form-group'>
+                  <label>" . $this->num_pregunta_texto . $this->det_requerido_ast . $this->det_enunciado . "</label>
+                  <select class='form-control' name='".$this->det_nom."' ".$this->det_requerido.">
+                    <option disabled selected hidden value=''>Seleccione una opci&oacute;n</option>";
     $cont_meta = $meta_min;
     while ($cont_meta <= $meta_max) {
       $ret .= "
-                  <input type='radio' name='".$this->det_nom."' id='".$this->det_nom."_".$cont_meta."' 
-                         value='".$cont_meta."' ".($cont_meta == $meta_min ? $this->det_requerido : "").">
-                  <label for='".$this->det_nom."_".$cont_meta."'>". ($cont_meta < 10 ? "&nbsp;&nbsp;" : "") . $cont_meta ."</label>
-                ";
+                    <option value='".$cont_meta."'>".$cont_meta."</option>";
       $cont_meta += 1;
     }
     $ret .= "
+                  </select>
+                  <small>Escala de " . $meta_min . " a " . $meta_max . ", donde " . $meta_min . " es nada satisfactorio y " . $meta_max . " es muy satisfactorio.</small>
                 </div>
-                <p><small>Escala de " . $meta_min . " a " . $meta_max . ", donde " . $meta_min . " es nada satisfactorio y " . $meta_max . " es muy satisfactorio</small></p>
               </div>";
               
     return $ret;
@@ -479,7 +480,7 @@ class QueryEncuestaDet {
               <div class='col-12'>
                 <p class='mb-0'>" . $this->num_pregunta_texto . $this->det_requerido_ast . $this->det_enunciado . "</p>
                 <div class='form-group'>
-                  <label for='".Funciones::name_file($this->det_nom)."'><small>Seleccione archivo para subir (máximo ".$meta_size."MB) - 
+                  <label for='".Funciones::name_file($this->det_nom)."'><small>Seleccione archivo para subir (m&aacute;ximo ".$meta_size."MB) - 
                     Formatos permitidos: " . $extensiones . "</small>
                   </label>
                   <input type='file' class='form-control-file' id='".Funciones::name_file($this->det_nom)."' 
@@ -505,45 +506,36 @@ class QueryEncuestaDet {
   
   public function cargaBooleano() {
     $ret = "";
-    
-    // si el booleano tiene para explicar la seleccion va a tener registros en encuesta_det_opciones
-    // el orden va a decir si es para el true o false (0 - 1)
-    
+
     $name_exp = Funciones::name_exp($this->det_nom);
     $name_capa_exp = "capa_" . $name_exp;
-    
+
     $false_exp = 0; $true_exp = 0;
-    $on_click_false = ""; $on_click_true = "";
     $opciones = $this->encuesta_det["opciones"];
-    
+
     foreach ($opciones as $opcion) {
       if ($opcion["orden"] == 0 && $opcion["explicacion"] == 1) $false_exp = 1;
       if ($opcion["orden"] == 1 && $opcion["explicacion"] == 1) $true_exp = 1;
     }
-    
-    if ($false_exp == 1 || $true_exp == 1) { 
-      $on_click_false = " onclick='mostrarExpBool(\"".$name_capa_exp."\", \"".$name_exp."\", ".$false_exp.")' ";
-      $on_click_true = " onclick='mostrarExpBool(\"".$name_capa_exp."\", \"".$name_exp."\", ".$true_exp.")' ";
-    }
-    
+
     $ret .= "
-              <div class='col-12'>
-                <p class='mb-0'>" . $this->num_pregunta_texto . $this->det_requerido_ast . $this->det_enunciado . "</p>
-                <div class='form-check form-check-inline'>
-                  <input class='form-check-input' type='radio' name='".$this->det_nom."' value='1' ".$this->det_requerido . $on_click_true . ">
-                  <label class='form-check-label'>Sí</label>
-                </div>
-                <div class='form-check form-check-inline'>
-                  <input class='form-check-input' type='radio' name='".$this->det_nom."' value='0' ".$this->det_requerido . $on_click_false . ">
-                  <label class='form-check-label'>No</label>
-                </div>";
+              <div class='col-12 col-md-6'>
+                <div class='form-group'>
+                  <label>" . $this->num_pregunta_texto . $this->det_requerido_ast . $this->det_enunciado . "</label>
+                  <select class='form-control' name='".$this->det_nom."' ".$this->det_requerido."
+                          onchange='seleccionarBooleanoLista(this, \"".$name_capa_exp."\", \"".$name_exp."\", ".$true_exp.", ".$false_exp.")'>
+                    <option disabled selected hidden value=''>Seleccione una opci&oacute;n</option>
+                    <option value='1'>S&iacute;</option>
+                    <option value='0'>No</option>
+                  </select>";
     if ($false_exp == 1 || $true_exp == 1) {
       $ret .= "
-                <div class='form-check form-check-inline' id='" . $name_capa_exp . "' style='display: none'>
-                  <input class='form-control' type='text' id='".$name_exp."' name='".$name_exp."' placeholder='¿por qué?' maxlength='255'>
-                </div>";
+                  <div id='" . $name_capa_exp . "' class='mt-3' style='display: none'>
+                    <input class='form-control' type='text' id='".$name_exp."' name='".$name_exp."' placeholder='&iquest;Por qu&eacute;?' maxlength='255'>
+                  </div>";
     }
     $ret .= "
+                </div>
               </div>";
               
     return $ret;
@@ -601,7 +593,7 @@ class QueryEncuestaDet {
                 <p class='mb-0'>" . $this->num_pregunta_texto . $this->det_requerido_ast . $this->det_enunciado . "</p>
                 <div class='form-group'>
                   <select class='form-control' name='".$this->det_nom."' " . $this->det_requerido . ">
-                    <option disabled selected hidden value=''>-- Seleccione una opción --</option>";
+                    <option disabled selected hidden value=''>-- Seleccione una opci&oacute;n --</option>";
     $ret .= Query::listarDireccionesEnvio($conn, $inc_domicilio, $imprimir);
     $ret .= "
                   </select>

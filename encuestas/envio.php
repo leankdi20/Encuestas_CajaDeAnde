@@ -1,45 +1,50 @@
 <?php
 include_once "header.php";
 
+$pixel_evento = "";
+$clase = "text-gris-oscuro";
+$titulo = "Formulario";
+$texto = "No fue posible procesar la solicitud.";
+
 $encuesta_id = $_GET['id'];
-$enc = Query::dataEncuesta($conn, $encuesta_id);  
+$enc = Query::dataEncuesta($conn, $encuesta_id);
 $encuesta = $enc["encuesta"];
 
-if (isset($_GET["accion"])) {
-  if ($_GET["accion"] == "crear") {
-		//if ($_POST["form_token"] == $_SESSION["form_token"]) {
-			$mens_crea = Procesos::crear_respuesta($conn, $encuesta_id, $_POST)["mensaje"];
-			unset($_SESSION["form_token"]);
-		// } else {
-			// $mens_crea = "Solo se puede realizar un envío simultáneo de este formulario.";
-		// }
-    
-    if ($mens_crea == "") {
-      $clase = "text-success";
-      $titulo = "¡Muchas gracias!";
-      $texto = $encuesta["mensaje_exito"];
-    } else {
-      $clase = "text-danger";
-      $titulo = "¡Atención!";
-      $texto = "Ocurrió un error al enviar su evaluación. Error: " . $mens_crea . ".";
-    }
+if (isset($_GET["accion"]) && $_GET["accion"] == "crear") {
+  $mens_crea = Procesos::crear_respuesta($conn, $encuesta_id, $_POST)["mensaje"];
+  unset($_SESSION["form_token"]);
+
+  if ($mens_crea == "") {
+    $clase = "text-success";
+    $titulo = "&iexcl;Muchas gracias!";
+    $texto = $encuesta["mensaje_exito"];
+
+    $pixel_evento = "
+      <script>
+        fbq('track', 'Lead');
+      </script>
+    ";
+  } else {
+    $clase = "text-danger";
+    $titulo = "&iexcl;Atenci&oacute;n!";
+    $texto = "Ocurri&oacute; un error al enviar su evaluaci&oacute;n. Error: " . $mens_crea . ".";
   }
 }
 
-echo "<main role='main' class='container text-gris-oscuro'>
-        <div class='row px-2 py-5'>
-          <div class='col-12 text-center'>";
-if (isset($_GET['app']) && $_GET['app'] != "1") {
-  echo "
-            <img src='assets/img/logo.png' class='img-logo'/>
-            <h3 class='text-gris my-4'>".$encuesta["nombre"]."</h3>";
-}
+echo $pixel_evento;
 echo "
-            <h4 class='text-gris my-4 " . $clase . "'>" . $titulo . "</h3>
-            <p>" . $texto . "</p>
-          </div>
+  <main role='main' class='survey-page'>
+    <div class='survey-shell container py-4 py-md-5'>
+      <section class='survey-card survey-card--message text-center'>
+        <div class='survey-brand survey-brand--centered'>
+          <img src='https://storageproyectosmercadeo.blob.core.windows.net/masaccesosbeneficios/banners/Logocajadeande.png' class='img-logo' alt='Caja de ANDE'/>
+          <span class='survey-badge'>Encuestas Caja de ANDE</span>
         </div>
-      </main>";
+        <h1 class='survey-title my-4 " . $clase . "'>" . $titulo . "</h1>
+        <p class='survey-description survey-description--message'>" . $texto . "</p>
+      </section>
+    </div>
+  </main>";
 
 include_once "footer.php";
 ?>
