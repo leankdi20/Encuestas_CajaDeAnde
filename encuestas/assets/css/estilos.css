@@ -73,6 +73,7 @@ h1, h2, h3, h4, h5, h6, button[type=submit] {
 .survey-card--message {
   max-width: 760px;
   margin: 0 auto;
+  padding: 2.6rem 3rem 2.4rem;
 }
 
 .survey-hero {
@@ -128,6 +129,7 @@ h1, h2, h3, h4, h5, h6, button[type=submit] {
 
 .survey-title--message {
   margin-top: 0;
+  margin-bottom: 1rem;
 }
 
 .survey-description {
@@ -139,7 +141,12 @@ h1, h2, h3, h4, h5, h6, button[type=submit] {
 }
 
 .survey-description--message {
+  max-width: 680px;
+  margin: 0 auto;
   color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.75;
+  padding: 0 0.75rem;
 }
 
 .survey-body {
@@ -757,6 +764,10 @@ h1, h2, h3, h4, h5, h6, button[type=submit] {
     box-shadow: none;
   }
 
+  .survey-card--message {
+    padding: 1.45rem 1rem 1.35rem;
+  }
+
   .survey-hero {
     padding: 1.25rem 0.9rem 1rem;
   }
@@ -819,9 +830,22 @@ h1, h2, h3, h4, h5, h6, button[type=submit] {
     line-height: 1.08;
   }
 
+  .survey-card--message .survey-title {
+    margin: 1.15rem 0 0.8rem;
+    font-size: 1.35rem;
+    line-height: 1.15;
+  }
+
   .survey-description {
     font-size: 0.86rem;
     line-height: 1.5;
+  }
+
+  .survey-description--message {
+    max-width: 100%;
+    padding: 0 0.35rem;
+    font-size: 0.86rem;
+    line-height: 1.65;
   }
 
   .survey-step__eyebrow {
@@ -995,8 +1019,19 @@ h1, h2, h3, h4, h5, h6, button[type=submit] {
     font-size: 1.28rem;
   }
 
+  .survey-card--message .survey-title {
+    font-size: 1.2rem;
+    margin-top: 1rem;
+  }
+
   .survey-description {
     font-size: 0.8rem;
+  }
+
+  .survey-description--message {
+    padding: 0 0.25rem;
+    font-size: 0.8rem;
+    line-height: 1.6;
   }
 
   .survey-step__title {

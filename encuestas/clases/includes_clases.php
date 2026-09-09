@@ -16,6 +16,7 @@ include_once "EstadoEmp.php";
 include_once "EstCivil.php";
 include_once "Genero.php";
 include_once "Gestion.php";
+include_once "MensajeExitoEncuesta.php";
 include_once "Multimedia.php";
 include_once "Procesos.php";
 include_once "Provincia.php";

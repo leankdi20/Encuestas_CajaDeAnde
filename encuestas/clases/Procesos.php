@@ -181,8 +181,8 @@ class Procesos {
                 
                 if ($file_size == 0) 
                   throw new Exception("Hay archivos que no se cargaron correctamente (tamaño).");
-                if (($file_size / 1024 / 1024) > $file_max_size) 
-                  throw new Exception("El archivo seleccionado supera el tamaño permitido. (F - ".$det_id." - " . $file_size . " - " . $file_max_size . ").");
+                if (($file_size / 1024 / 1024) > $file_max_size)
+                  throw new Exception("El archivo seleccionado supera el tama&ntilde;o permitido de ".$file_max_size."MB. Seleccione una imagen o documento m&aacute;s liviano.");
               } elseif ($tipo_id == EDT_SEL_MUL) {
                 if (!isset($valor) || count($valor) <= 0) 
                   throw new Exception("Hay puntos requeridos que no se completaron (1 - ".$det_id.")");
@@ -272,6 +272,10 @@ class Procesos {
 
 							if (isset($file)) {
 								$file_size = $file["size"];
+                $file_max_size = $encuesta_det["meta"][META_FILE_SIZE] ?? 5;
+
+                if (($file_size / 1024 / 1024) > $file_max_size)
+                  throw new Exception("El archivo seleccionado supera el tama&ntilde;o permitido de ".$file_max_size."MB. Seleccione una imagen o documento m&aacute;s liviano.");
 
 								if ($file_size > 0) {
 									$file_type = $file["type"];

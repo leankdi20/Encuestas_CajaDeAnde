@@ -484,7 +484,8 @@ class QueryEncuestaDet {
                     Formatos permitidos: " . $extensiones . "</small>
                   </label>
                   <input type='file' class='form-control-file' id='".Funciones::name_file($this->det_nom)."' 
-                         name='".Funciones::name_file($this->det_nom)."' accept='".$extensiones."' " . $this->det_requerido . ">
+                         name='".Funciones::name_file($this->det_nom)."' accept='".$extensiones."'
+                         data-max-size-mb='".$meta_size."' onchange='validarArchivo(this)' " . $this->det_requerido . ">
                   <input type='hidden' name='".$this->det_nom."'>
                 </div>
               </div>";

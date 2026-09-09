@@ -11,13 +11,18 @@ $enc = Query::dataEncuesta($conn, $encuesta_id);
 $encuesta = $enc["encuesta"];
 
 if (isset($_GET["accion"]) && $_GET["accion"] == "crear") {
-  $mens_crea = Procesos::crear_respuesta($conn, $encuesta_id, $_POST)["mensaje"];
+  if (empty($_POST) && ($_SERVER["CONTENT_LENGTH"] ?? 0) > 0) {
+    $mens_crea = "El tama&ntilde;o total de los archivos supera el l&iacute;mite permitido por el servidor (" . ini_get("post_max_size") . "). Seleccione im&aacute;genes o documentos m&aacute;s livianos.";
+  } else {
+    $mens_crea = Procesos::crear_respuesta($conn, $encuesta_id, $_POST)["mensaje"];
+  }
   unset($_SESSION["form_token"]);
 
   if ($mens_crea == "") {
     $clase = "text-success";
     $titulo = "&iexcl;Muchas gracias!";
-    $texto = $encuesta["mensaje_exito"];
+    $mensaje_exito = MensajeExitoEncuestaFactory::crear($encuesta_id);
+    $texto = $mensaje_exito->obtenerMensaje($encuesta);
 
     $pixel_evento = "
       <script>

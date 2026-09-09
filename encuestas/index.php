@@ -163,10 +163,42 @@ if (isset($encuesta) && $encuesta_activa && empty($encuesta_msg_bloqueo) && !$mo
 
     <script>
       " . $texto_dependencias_js . "
+      function validarArchivo(input) {
+        var maxSizeMb = parseFloat(input.getAttribute('data-max-size-mb') || '0');
+        var file = input.files && input.files.length > 0 ? input.files[0] : null;
+
+        input.setCustomValidity('');
+
+        if (!file || !maxSizeMb) return true;
+
+        if (file.size > maxSizeMb * 1024 * 1024) {
+          var mensaje = 'El archivo seleccionado supera el tama\u00f1o permitido de ' + maxSizeMb + 'MB. Seleccione una imagen o documento m\u00e1s liviano.';
+          input.value = '';
+          input.setCustomValidity(mensaje);
+          input.reportValidity();
+          if (!input.required) input.setCustomValidity('');
+          return false;
+        }
+
+        return true;
+      }
+
+      function validarArchivosFormulario(formulario) {
+        var archivos = Array.from(formulario.querySelectorAll('input[type=\"file\"]')).filter(function(input) {
+          return !input.disabled && input.offsetParent !== null;
+        });
+
+        return archivos.every(function(input) {
+          return validarArchivo(input);
+        });
+      }
+
       function intentarSubmit() {
         let formulario = document.getElementById('formulario');
         let lblProcessing = document.getElementById('lblProcessing');
         let btnSend = document.getElementById('btnSend');
+
+        if (!validarArchivosFormulario(formulario)) return;
 
         if (formulario.reportValidity()) {
           lblProcessing.classList.remove('d-none');
@@ -297,6 +329,7 @@ if (isset($encuesta) && $encuesta_activa && empty($encuesta_msg_bloqueo) && !$mo
           });
 
           const invalidField = currentFields.find(function(field) {
+            if (field.type === 'file' && !validarArchivo(field)) return true;
             return !field.checkValidity();
           });
 
