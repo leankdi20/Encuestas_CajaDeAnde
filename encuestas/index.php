@@ -34,7 +34,7 @@ if (isset($encuesta) && $encuesta_activa && empty($encuesta_msg_bloqueo) && !$mo
   echo "
             <div class='survey-brand'>
               <img src='https://storageproyectosmercadeo.blob.core.windows.net/masaccesosbeneficios/banners/Logocajadeande.png' class='img-logo' alt='Caja de ANDE'/>
-              <span class='survey-badge'>Encuestas Caja de ANDE</span>
+              <span class='survey-badge'>Gestión Caja de ANDE</span>
             </div>
             <h1 class='survey-title'>" . $encuesta["nombre"] . "</h1>
             <p class='survey-description'>" . $encuesta["descripcion"] . "</p>

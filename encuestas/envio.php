@@ -43,7 +43,7 @@ echo "
       <section class='survey-card survey-card--message text-center'>
         <div class='survey-brand survey-brand--centered'>
           <img src='https://storageproyectosmercadeo.blob.core.windows.net/masaccesosbeneficios/banners/Logocajadeande.png' class='img-logo' alt='Caja de ANDE'/>
-          <span class='survey-badge'>Encuestas Caja de ANDE</span>
+          <span class='survey-badge'>Gestión Caja de ANDE</span>
         </div>
         <h1 class='survey-title my-4 " . $clase . "'>" . $titulo . "</h1>
         <p class='survey-description survey-description--message'>" . $texto . "</p>

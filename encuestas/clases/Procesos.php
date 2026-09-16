@@ -374,7 +374,7 @@ class Procesos {
                                         $respuesta_id) {
     if ($correos != "") {
       $encuesta_nom = $encuesta["nombre"];
-      $encuesta_url = "https://cajadeande.publiweb.cr/dashboard/csv_encuestas.php?encuesta_id=" . $encuesta["encuesta_id"] . "&respuesta_id=" . $respuesta_id;
+      $encuesta_url = "https://app.powerbi.com/groups/me/reports/56eb49c6-8aa6-44a6-ac66-a8e78da45eb4/696f7283108d18abb2e7?ctid=263ebb7b-92db-4a61-8cb1-25ecefb1e05c&experience=power-bi";
       
       $partes_correos = explode(";", $correos);
       
