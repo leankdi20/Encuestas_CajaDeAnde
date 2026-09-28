@@ -6,7 +6,7 @@ class QueryEncuesta {
     $incluye_nombre = $encuesta["incluye_nombre"] == 1;
     $incluye_cedula = $encuesta["incluye_cedula"] == 1;
     $ced_req = $encuesta["cedula_oblig"] == 1 ? " required " : "";
-    $ced_req_tex = $encuesta["cedula_oblig"] == 1 ? " (formato 9 dígitos:)" : " (formato 9 dígitos: )";
+    $ced_req_tex = $encuesta["cedula_oblig"] == 1 ? " (formato 10 dígitos:)" : " (formato 10 dígitos: )";
     $on_input = "";
     if ($incluye_nombre) $on_input = " oninput='revisarCedula(this.value)' ";
 
@@ -34,7 +34,7 @@ class QueryEncuesta {
               <div class='col-12 col-md-6'>
                 <div class='form-group'>
                   <label class='field-kicker'>Nombre completo" . $nom_req_tex . "</label>
-                  <input type='text' class='form-control' autocomplete='off' id='nombre' name='nombre' placeholder='Digite su nombre completo'" . $nom_req . "
+                  <input type='text' class='form-control' autocomplete='off' id='nombre' name='nombre' placeholder='Se completar&aacute; autom&aacute;ticamente seg&uacute;n la c&eacute;dula' readonly" . $nom_req . "
                          onkeypress='return (event.charCode > 64 && event.charCode < 91) || (event.charCode > 96 && event.charCode < 123) || event.charCode == 32'>
                   <small id='nombreFeedback' class='d-none'></small>
                 </div>

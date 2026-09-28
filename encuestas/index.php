@@ -13,6 +13,25 @@ $mostrar_mensaje_fechas = ($encuesta["mostrar_mensaje_fechas"] ?? 0) == 1;
 
 $var_app = "";
 
+$tracking_params = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term"
+];
+
+$tracking_data = [];
+foreach ($tracking_params as $tracking_param) {
+  $tracking_value = $_GET[$tracking_param] ?? "";
+  $tracking_data[$tracking_param] = is_array($tracking_value) ? "" : trim($tracking_value);
+}
+
+$utm_source_lower = strtolower($tracking_data["utm_source"]);
+$es_meta = in_array($utm_source_lower, ["meta", "facebook", "fb", "instagram", "ig"]);
+
+$tracking_data["origen_trafico"] = $es_meta ? "meta" : "sitio web";
+
 $agente_id = isset($_GET['age_id']) ? $_GET['age_id'] : 0;
 $agente_url = ($agente_id == 0) ? "" : ("&age_id=" . $agente_id);
 
@@ -148,7 +167,12 @@ if (isset($encuesta) && $encuesta_activa && empty($encuesta_msg_bloqueo) && !$mo
   }
 
   echo "
-              <input type='hidden' name='form_token' value='" . $token_form . "'>
+              <input type='hidden' name='form_token' value='" . $token_form . "'>";
+  foreach ($tracking_data as $tracking_name => $tracking_value) {
+    echo "
+              <input type='hidden' name='" . htmlspecialchars($tracking_name, ENT_QUOTES, 'UTF-8') . "' value='" . htmlspecialchars($tracking_value, ENT_QUOTES, 'UTF-8') . "'>";
+  }
+  echo "
               <div class='survey-actions' id='surveyActions'>
                 <button type='button' id='btnPrevStep' class='btn btn-outline-brand d-none'>Anterior</button>
                 <button type='button' id='btnNextStep' class='btn btn-brand-secondary d-none'>Siguiente</button>
@@ -193,6 +217,42 @@ if (isset($encuesta) && $encuesta_activa && empty($encuesta_msg_bloqueo) && !$mo
         });
       }
 
+      console.log('Tracking formulario', " . json_encode($tracking_data) . ");
+
+      function obtenerCamposValidables(contenedor) {
+        return Array.from(contenedor.querySelectorAll('input, select, textarea')).filter(function(field) {
+          if (field.type === 'hidden' || field.disabled) return false;
+
+          var dependenciaOculta = field.closest('.survey-question.d-none[dep_alguien=\"1\"]');
+          return dependenciaOculta === null;
+        });
+      }
+
+      function textoCampo(field) {
+        var grupo = field.closest('.form-group') || field.closest('.survey-question') || field.parentElement;
+        var etiqueta = grupo ? grupo.querySelector('label, p') : null;
+        var texto = etiqueta ? etiqueta.textContent.replace('*', '').trim() : '';
+
+        return texto || 'este campo';
+      }
+
+      function reportarCampoInvalido(field) {
+        if (typeof window.irAlPasoDelCampo === 'function') window.irAlPasoDelCampo(field);
+
+        window.setTimeout(function() {
+          if (field.classList.contains('form-control--multiple')) {
+            var multiselect = field.closest('.survey-multiselect');
+            var trigger = multiselect ? multiselect.querySelector('.survey-multiselect__trigger') : null;
+            alert('Por favor complete el campo requerido: ' + textoCampo(field) + '.');
+            if (trigger) trigger.focus();
+            return;
+          }
+
+          field.reportValidity();
+          if (typeof field.focus === 'function') field.focus();
+        }, 0);
+      }
+
       function intentarSubmit() {
         let formulario = document.getElementById('formulario');
         let lblProcessing = document.getElementById('lblProcessing');
@@ -200,13 +260,19 @@ if (isset($encuesta) && $encuesta_activa && empty($encuesta_msg_bloqueo) && !$mo
 
         if (!validarArchivosFormulario(formulario)) return;
 
-        if (formulario.reportValidity()) {
-          lblProcessing.classList.remove('d-none');
-          btnSend.setAttribute('disabled', 'disabled');
-          formulario.submit();
-        } else {
-          alert('Por favor aseg\u00farese de completar los campos requeridos, de ser un(a) accionista habilitado(a) en Caja de ANDE y de que sus datos est\u00e9n actualizados.');
+        const invalidField = obtenerCamposValidables(formulario).find(function(field) {
+          if (field.type === 'file' && !validarArchivo(field)) return true;
+          return !field.checkValidity();
+        });
+
+        if (invalidField) {
+          reportarCampoInvalido(invalidField);
+          return;
         }
+
+        lblProcessing.classList.remove('d-none');
+        btnSend.setAttribute('disabled', 'disabled');
+        formulario.submit();
       }
 
       function inicializarEtapasEncuesta() {
@@ -318,15 +384,22 @@ if (isset($encuesta) && $encuesta_activa && empty($encuesta_msg_bloqueo) && !$mo
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
+        window.irAlPasoDelCampo = function(field) {
+          const panel = field.closest('.survey-step');
+          const stepIndex = steps.findIndex(function(step) {
+            return step.panel === panel;
+          });
+
+          if (stepIndex >= 0) goToStep(stepIndex);
+        };
+
         btnPrev.addEventListener('click', function() {
           if (activeIndex > 0) goToStep(activeIndex - 1);
         });
 
         btnNext.addEventListener('click', function() {
           const currentPanel = steps[activeIndex].panel;
-          const currentFields = Array.from(currentPanel.querySelectorAll('input, select, textarea')).filter(function(field) {
-            return field.type !== 'hidden' && !field.disabled && field.offsetParent !== null;
-          });
+          const currentFields = obtenerCamposValidables(currentPanel);
 
           const invalidField = currentFields.find(function(field) {
             if (field.type === 'file' && !validarArchivo(field)) return true;
@@ -334,8 +407,7 @@ if (isset($encuesta) && $encuesta_activa && empty($encuesta_msg_bloqueo) && !$mo
           });
 
           if (invalidField) {
-            invalidField.reportValidity();
-            invalidField.focus();
+            reportarCampoInvalido(invalidField);
             return;
           }
 
@@ -371,8 +443,8 @@ if (isset($encuesta) && $encuesta_activa && empty($encuesta_msg_bloqueo) && !$mo
         var objNombre = document.getElementById('nombre');
         if (!objNombre) return;
 
-        objNombre.readOnly = !permitirEdicion;
-        objNombre.classList.toggle('is-autofilled', !permitirEdicion && objNombre.value !== '');
+        objNombre.readOnly = true;
+        objNombre.classList.toggle('is-autofilled', objNombre.value !== '');
       }
 
       function limpiarDatosAccionista() {
@@ -388,7 +460,7 @@ if (isset($encuesta) && $encuesta_activa && empty($encuesta_msg_bloqueo) && !$mo
 
         setCedulaFeedback('', 'neutral');
         setNombreFeedback('', 'neutral');
-        habilitarEdicionManualNombre(true);
+        habilitarEdicionManualNombre(false);
       }
 
       function aplicarDatosAccionista(datos) {
@@ -408,9 +480,9 @@ if (isset($encuesta) && $encuesta_activa && empty($encuesta_msg_bloqueo) && !$mo
           setCedulaFeedback('Accionista localizado correctamente.', 'success');
           setNombreFeedback('El nombre se complet\u00f3 autom\u00e1ticamente seg\u00fan la c\u00e9dula digitada.', 'success');
         } else {
-          setCedulaFeedback('No se encontraron datos para esta c\u00e9dula. Puede completar el nombre manualmente.', 'warning');
+          setCedulaFeedback('No se encontraron datos para esta c\u00e9dula.', 'warning');
           setNombreFeedback('No fue posible completar el nombre de forma autom\u00e1tica.', 'warning');
-          habilitarEdicionManualNombre(true);
+          habilitarEdicionManualNombre(false);
         }
       }
 
@@ -451,8 +523,8 @@ if (isset($encuesta) && $encuesta_activa && empty($encuesta_msg_bloqueo) && !$mo
           .catch(function(err) {
             console.log('Ocurri\u00f3 un error con la ejecuci\u00f3n', err);
             setCedulaFeedback('No fue posible consultar el servicio en este momento.', 'warning');
-            setNombreFeedback('Puede completar el nombre manualmente mientras el servicio vuelve a estar disponible.', 'warning');
-            habilitarEdicionManualNombre(true);
+            setNombreFeedback('No fue posible completar el nombre de forma autom\u00e1tica.', 'warning');
+            habilitarEdicionManualNombre(false);
           });
         }, 350);
       }

@@ -7,7 +7,8 @@ class Respuesta {
 								  $agente_id, $gestion_id, $fecha, $fecha_nac, $estado_emp_id, 
 								  $estado_otro, $genero_id, $genero_otro, $puesto_id, $puesto_otro, 
 								  $provincia_id, $canton_id, $distrito_id, $correo, $telefono, 
-								  $est_civil_id) {
+								  $est_civil_id, $origen_trafico, $utm_source, $utm_medium,
+                  $utm_campaign, $utm_content, $utm_term) {
     $ret = array("mensaje" => "", 
                  "datos" => null);
     $id = null;
@@ -17,18 +18,21 @@ class Respuesta {
                                        agente_id, gestion_id, fecha, fecha_nac, estado_emp_id, 
                                        estado_otro, genero_id, genero_otro, puesto_id, puesto_otro, 
                                        provincia_id, canton_id, distrito_id, correo, telefono, 
-									   est_civil_id) 
+									   est_civil_id, origen_trafico, utm_source, utm_medium,
+                     utm_campaign, utm_content, utm_term)
                VALUES (?, ?, ?, ?, ?, 
                        ?, ?, ?, ?, ?, 
                        ?, ?, ?, ?, ?, 
                        ?, ?, ?, ?, ?, 
-					   ?); 
+					   ?, ?, ?, ?, ?,
+             ?, ?);
                SELECT SCOPE_IDENTITY() as id; ";
       $params = array($encuesta_id, $nombre, $cedula, $sucursal_id, $unidad_id, 
                       $agente_id, $gestion_id, $fecha, $fecha_nac, $estado_emp_id, 
                       $estado_otro, $genero_id, $genero_otro, $puesto_id, $puesto_otro, 
                       $provincia_id, $canton_id, $distrito_id, $correo, $telefono, 
-					  $est_civil_id);
+					  $est_civil_id, $origen_trafico, $utm_source, $utm_medium,
+            $utm_campaign, $utm_content, $utm_term);
       $datos = sqlsrv_query($conn, $cmd, $params);
       
       if (!$datos) 

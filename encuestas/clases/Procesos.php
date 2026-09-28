@@ -1,6 +1,24 @@
 <?php
 
 class Procesos {
+  private static function permiteEnvioCorreos()
+  {
+    $host_actual = $_SERVER["HTTP_HOST"] ?? $_SERVER["SERVER_NAME"] ?? "";
+    $host_actual = strtolower(explode(":", $host_actual)[0]);
+
+    return $host_actual == "mercadeo.cajadeande.fi.cr";
+  }
+
+  private static function valorTracking($obj_post, $llave, $max_length)
+  {
+    $valor_post = $obj_post[$llave] ?? "";
+    if (is_array($valor_post)) return null;
+
+    $valor = filter_var(htmlspecialchars(trim($valor_post)));
+    if ($valor == "") return null;
+
+    return substr($valor, 0, $max_length);
+  }
   
   // -------------------------------------- ENCUESTAS ------------------------------------- //
   
@@ -66,6 +84,12 @@ class Procesos {
       $canton_id       = filter_var(htmlspecialchars($obj_post["canton"] ?? ""));
       $distrito_id     = filter_var(htmlspecialchars($obj_post["distrito"] ?? ""));
       $est_civil_id    = filter_var(htmlspecialchars($obj_post["est_civil"] ?? ""));
+      $origen_trafico  = self::valorTracking($obj_post, "origen_trafico", 50) ?? "organico";
+      $utm_source      = self::valorTracking($obj_post, "utm_source", 100);
+      $utm_medium      = self::valorTracking($obj_post, "utm_medium", 100);
+      $utm_campaign    = self::valorTracking($obj_post, "utm_campaign", 255);
+      $utm_content     = self::valorTracking($obj_post, "utm_content", 255);
+      $utm_term        = self::valorTracking($obj_post, "utm_term", 255);
       
       
       $nombre         = ($nombre == "") ? null : $nombre;
@@ -87,6 +111,7 @@ class Procesos {
       $canton_id      = ($canton_id == "") ? null : $canton_id;
       $distrito_id    = ($distrito_id == "") ? null : $distrito_id;
       $est_civil_id   = ($est_civil_id == "") ? null : $est_civil_id;
+      $origen_trafico = ($origen_trafico == "") ? "organico" : $origen_trafico;
       
       $fecha = date('Y-m-d');
       
@@ -205,7 +230,8 @@ class Procesos {
                                  $agente_id, $gestion_id, $fecha, $fecha_nac, $estado_emp_id, 
                                  $estado_otro, $genero_id, $genero_otro, $puesto_id, $puesto_otro, 
                                  $provincia_id, $canton_id, $distrito_id, $correo, $telefono, 
-                                 $est_civil_id);
+                                 $est_civil_id, $origen_trafico, $utm_source, $utm_medium,
+                                 $utm_campaign, $utm_content, $utm_term);
       
       $mens = $res["mensaje"];
       if ($mens != "") throw new Exception("Error creando la respuesta. " . $mens);
@@ -360,8 +386,8 @@ class Procesos {
       sqlsrv_commit($conn);
       
       
-      if (!$_SESSION["dev"]) Procesos::enviar_correos($conn, $enc, $correos, $cedula, $nombre, 
-                                                      $respuesta_id);
+      if (self::permiteEnvioCorreos()) Procesos::enviar_correos($conn, $enc, $correos, $cedula, $nombre,
+                                                                $respuesta_id);
     } catch (Exception $e) {
       sqlsrv_rollback($conn);
       $ret["mensaje"] = $e->getMessage();
