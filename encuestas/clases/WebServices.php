@@ -1,12 +1,57 @@
 <?php
 
 class WebServices {
+  private static $cache_cliente_core = array();
+
+  public static function informacionSocioPorCedula($cedula)
+  {
+    $ret = array(
+      "nombre" => "",
+      "correo" => "",
+      "activo" => false,
+      "idTipoSocio" => null,
+      "desTipoSocio" => ""
+    );
+
+    $cedula = self::aplicarMascara($cedula);
+    if (strlen($cedula) < 9) return $ret;
+
+    if (self::usaServicioCore()) {
+      $cliente = self::obtenerInformacionClienteCore($cedula);
+      if ($cliente["msg"] != "") return $ret;
+
+      $valor = $cliente["valor"];
+      $ret["activo"] = ($valor["activo"] ?? 0) == 1;
+
+      if ($ret["activo"]) {
+        $ret["nombre"] = $valor["nombre"] ?? "";
+        $ret["correo"] = $valor["correo"] ?? "";
+        $ret["idTipoSocio"] = $valor["idTipoSocio"] ?? null;
+        $ret["desTipoSocio"] = $valor["desTipoSocio"] ?? "";
+      }
+
+      return $ret;
+    }
+
+    $ret["nombre"] = self::nombrePorCedula($cedula);
+    $ret["correo"] = self::correoPorCedula($cedula);
+    $ret["activo"] = self::clienteActivoPorCedula($cedula);
+
+    return $ret;
+  }
   
   public static function nombrePorCedula($cedula)
   {
     $cedula = self::aplicarMascara($cedula);
     
     if (strlen($cedula) < 9) return "";
+
+    if (self::usaServicioCore()) {
+      $cliente = self::obtenerInformacionClienteCore($cedula);
+      if ($cliente["msg"] != "" || ($cliente["valor"]["activo"] ?? 0) != 1) return "";
+
+      return $cliente["valor"]["nombre"] ?? "";
+    }
     
     $request = '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
                                xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
@@ -30,6 +75,13 @@ class WebServices {
     $cedula = self::aplicarMascara($cedula);
     
     if (strlen($cedula) < 9) return "";
+
+    if (self::usaServicioCore()) {
+      $cliente = self::obtenerInformacionClienteCore($cedula);
+      if ($cliente["msg"] != "" || ($cliente["valor"]["activo"] ?? 0) != 1) return "";
+
+      return $cliente["valor"]["correo"] ?? "";
+    }
     
     $request = '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
                                xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
@@ -59,6 +111,13 @@ class WebServices {
     $cedula = self::aplicarMascara($cedula);
     
     if (strlen($cedula) < 9) return false;
+
+    if (self::usaServicioCore()) {
+      $cliente = self::obtenerInformacionClienteCore($cedula);
+      if ($cliente["msg"] != "") return false;
+
+      return ($cliente["valor"]["activo"] ?? 0) == 1;
+    }
     
     $request = '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
                                xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
@@ -85,12 +144,23 @@ class WebServices {
   
   public static function clienteActivoPorCedulaObj($cedula)
   {
-		$ret = array("activo" => false, "msg" => "");
+		$ret = array("activo" => false, "msg" => "", "idTipoSocio" => null, "desTipoSocio" => "");
 		
 		try {
 			$cedula = self::aplicarMascara($cedula);
     
 			if (strlen($cedula) < 9) throw new Exception("Cedula " . $cedula . " con formato incorrecto");
+
+      if (self::usaServicioCore()) {
+        $cliente = self::obtenerInformacionClienteCore($cedula);
+        if ($cliente["msg"] != "") throw new Exception($cliente["msg"]);
+
+        $valor = $cliente["valor"];
+        $ret["activo"] = ($valor["activo"] ?? 0) == 1;
+        $ret["idTipoSocio"] = $valor["idTipoSocio"] ?? null;
+        $ret["desTipoSocio"] = $valor["desTipoSocio"] ?? "";
+        return $ret;
+      }
 			
 			$request = '<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
 																 xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
@@ -141,6 +211,72 @@ class WebServices {
     
     return "";
   }
+
+  private static function usaServicioCore()
+  {
+    $ws_api = $_SESSION["servidor_api"] ?? "";
+
+    return stripos($ws_api, "ObtenerInformacionClienteCORE") !== false;
+  }
+
+  private static function obtenerInformacionClienteCore($cedula)
+  {
+    // CORE requiere el cero inicial; mantener la cédula como texto en el JSON.
+    $cedula = self::aplicarMascara((string)$cedula);
+    if (isset(self::$cache_cliente_core[$cedula])) return self::$cache_cliente_core[$cedula];
+
+		$ret = array("valor" => null, "msg" => "");
+    $ws_api = $_SESSION["servidor_api"] ?? "";
+    $request = json_encode(array("cedula" => $cedula));
+    $headers = array("Content-Type: application/json",
+                     "Accept: application/json",
+                     "Content-length: " . strlen($request));
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $ws_api);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $request);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+    $res = curl_exec($ch);
+    $err_cod = curl_errno($ch);
+    $err_msg = curl_error($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+    if (PHP_VERSION_ID < 80000) curl_close($ch);
+
+    if ($err_cod != "0") {
+			$ret["msg"] = "Error curl " . $err_cod . ". " . $err_msg;
+      self::$cache_cliente_core[$cedula] = $ret;
+			return $ret;
+		}
+
+    if ($http_code < 200 || $http_code >= 300) {
+			$ret["msg"] = "Error HTTP " . $http_code . " consultando CORE";
+      self::$cache_cliente_core[$cedula] = $ret;
+			return $ret;
+		}
+
+    $valor = json_decode($res, true);
+    if (!is_array($valor)) {
+			$ret["msg"] = "Respuesta invalida consultando CORE";
+      self::$cache_cliente_core[$cedula] = $ret;
+			return $ret;
+		}
+
+    if (($valor["codResultado"] ?? 0) != 1) {
+			$ret["msg"] = "CORE no encontro informacion para la cedula";
+      self::$cache_cliente_core[$cedula] = $ret;
+			return $ret;
+		}
+
+    $ret["valor"] = $valor;
+    self::$cache_cliente_core[$cedula] = $ret;
+
+    return $ret;
+  }
   
   public static function ejecutar($request, $endpoint = "WsCGPWeb.asmx")
   {
@@ -167,7 +303,7 @@ class WebServices {
     $err_cod = curl_errno($ch);
     $err_msg = curl_error($ch);
 
-    curl_close($ch);
+    if (PHP_VERSION_ID < 80000) curl_close($ch);
     
     if ($err_cod != "0") {
 			$ret["msg"] = "Error curl " . $err_cod . ". " . $err_msg;

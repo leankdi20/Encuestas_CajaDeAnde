@@ -423,6 +423,11 @@ if (isset($encuesta) && $encuesta_activa && empty($encuesta_msg_bloqueo) && !$mo
         return (cedula || '').replace(/[^0-9]/g, '');
       }
 
+      function normalizarCedulaConsulta(cedula) {
+        var digitos = limpiarCedula(cedula);
+        return digitos.length === 9 ? '0' + digitos : digitos;
+      }
+
       function setCedulaFeedback(message, type) {
         var feedback = document.getElementById('cedulaFeedback');
         if (!feedback) return;
@@ -433,6 +438,14 @@ if (isset($encuesta) && $encuesta_activa && empty($encuesta_msg_bloqueo) && !$mo
 
       function setNombreFeedback(message, type) {
         var feedback = document.getElementById('nombreFeedback');
+        if (!feedback) return;
+
+        feedback.className = 'survey-feedback survey-feedback--' + type;
+        feedback.textContent = message;
+      }
+
+      function setTipoSocioFeedback(message, type) {
+        var feedback = document.getElementById('tipoSocioFeedback');
         if (!feedback) return;
 
         feedback.className = 'survey-feedback survey-feedback--' + type;
@@ -450,6 +463,8 @@ if (isset($encuesta) && $encuesta_activa && empty($encuesta_msg_bloqueo) && !$mo
       function limpiarDatosAccionista() {
         var objNombre = document.getElementById('nombre');
         var objCorreo = document.getElementById('correo');
+        var objIdTipoSocio = document.getElementById('idTipoSocio');
+        var objDesTipoSocio = document.getElementById('desTipoSocio');
 
         if (objNombre) {
           objNombre.value = '';
@@ -457,17 +472,24 @@ if (isset($encuesta) && $encuesta_activa && empty($encuesta_msg_bloqueo) && !$mo
         }
 
         if (objCorreo) objCorreo.value = '';
+        if (objIdTipoSocio) objIdTipoSocio.value = '';
+        if (objDesTipoSocio) objDesTipoSocio.value = '';
 
         setCedulaFeedback('', 'neutral');
         setNombreFeedback('', 'neutral');
+        setTipoSocioFeedback('', 'neutral');
         habilitarEdicionManualNombre(false);
       }
 
       function aplicarDatosAccionista(datos) {
         var objNombre = document.getElementById('nombre');
         var objCorreo = document.getElementById('correo');
+        var objIdTipoSocio = document.getElementById('idTipoSocio');
+        var objDesTipoSocio = document.getElementById('desTipoSocio');
         var nombre = (datos && datos.nombre ? datos.nombre : '').trim();
         var correo = (datos && datos.correo ? datos.correo : '').trim();
+        var idTipoSocio = datos && datos.idTipoSocio ? String(datos.idTipoSocio).trim() : '';
+        var desTipoSocio = datos && datos.desTipoSocio ? String(datos.desTipoSocio).trim() : '';
 
         if (objNombre) {
           objNombre.value = nombre;
@@ -475,13 +497,17 @@ if (isset($encuesta) && $encuesta_activa && empty($encuesta_msg_bloqueo) && !$mo
         }
 
         if (objCorreo && correo !== '') objCorreo.value = correo;
+        if (objIdTipoSocio) objIdTipoSocio.value = idTipoSocio;
+        if (objDesTipoSocio) objDesTipoSocio.value = desTipoSocio;
 
         if (nombre !== '') {
           setCedulaFeedback('Accionista localizado correctamente.', 'success');
           setNombreFeedback('El nombre se complet\u00f3 autom\u00e1ticamente seg\u00fan la c\u00e9dula digitada.', 'success');
+          setTipoSocioFeedback(desTipoSocio !== '' ? ('Tipo de socio: ' + desTipoSocio) : '', 'success');
         } else {
           setCedulaFeedback('No se encontraron datos para esta c\u00e9dula.', 'warning');
           setNombreFeedback('No fue posible completar el nombre de forma autom\u00e1tica.', 'warning');
+          setTipoSocioFeedback('', 'neutral');
           habilitarEdicionManualNombre(false);
         }
       }
@@ -509,7 +535,7 @@ if (isset($encuesta) && $encuesta_activa && empty($encuesta_msg_bloqueo) && !$mo
         setNombreFeedback('Consultando el nombre asociado a la c\u00e9dula.', 'neutral');
 
         cedulaLookupTimer = window.setTimeout(function() {
-          fetch('ajax.php?accion=leerSocio&cedula=' + encodeURIComponent(cedulaLimpia), { cache: 'no-cache' })
+          fetch('ajax.php?accion=leerSocio&cedula=' + encodeURIComponent(normalizarCedulaConsulta(cedulaLimpia)), { cache: 'no-cache' })
           .then(function(response) {
             if (response.status !== 200) {
               throw new Error('Servicio no disponible. Estado HTTP: ' + response.status);
@@ -524,6 +550,7 @@ if (isset($encuesta) && $encuesta_activa && empty($encuesta_msg_bloqueo) && !$mo
             console.log('Ocurri\u00f3 un error con la ejecuci\u00f3n', err);
             setCedulaFeedback('No fue posible consultar el servicio en este momento.', 'warning');
             setNombreFeedback('No fue posible completar el nombre de forma autom\u00e1tica.', 'warning');
+            setTipoSocioFeedback('', 'neutral');
             habilitarEdicionManualNombre(false);
           });
         }, 350);

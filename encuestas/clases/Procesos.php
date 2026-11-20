@@ -49,10 +49,15 @@ class Procesos {
   
   public static function crear_respuesta($conn, $encuesta_id, $obj_post)
   {
-    $ret = array("mensaje" => "");
+    $ret = array("mensaje" => "", "guardado" => false, "respuesta_id" => null);
+    $transaccion_abierta = false;
     
     try {
-      sqlsrv_begin_transaction($conn);
+      if (!sqlsrv_begin_transaction($conn)) {
+        error_log('Encuestas: no se pudo iniciar la transacción. '.json_encode(sqlsrv_errors()));
+        throw new Exception('No fue posible iniciar el guardado de la solicitud. Intente nuevamente.');
+      }
+      $transaccion_abierta = true;
       
       
       // ----------------------- BLOQUE DE VALIDACIONES ----------------------- //
@@ -383,14 +388,28 @@ class Procesos {
       // creo los registros para cada uno de los puntos de la encuesta
       
       
-      sqlsrv_commit($conn);
+      if (!sqlsrv_commit($conn)) {
+        error_log('Encuestas: no se pudo confirmar la transacción. '.json_encode(sqlsrv_errors()));
+        throw new Exception('No fue posible confirmar el guardado de la solicitud.');
+      }
+      $transaccion_abierta = false;
+      $ret["guardado"] = true;
+      $ret["respuesta_id"] = $respuesta_id;
       
       
-      if (self::permiteEnvioCorreos()) Procesos::enviar_correos($conn, $enc, $correos, $cedula, $nombre,
-                                                                $respuesta_id);
-    } catch (Exception $e) {
-      sqlsrv_rollback($conn);
+    } catch (Throwable $e) {
+      if ($transaccion_abierta && !sqlsrv_rollback($conn))
+        error_log('Encuestas: no se pudo revertir la transacción. '.json_encode(sqlsrv_errors()));
       $ret["mensaje"] = $e->getMessage();
+    }
+
+    if ($ret["guardado"] && self::permiteEnvioCorreos()) {
+      try {
+        Procesos::enviar_correos($conn, $enc, $correos, $cedula, $nombre, $respuesta_id);
+      } catch (Throwable $e) {
+        // El envío ya fue confirmado; un fallo del correo no deshace la solicitud.
+        error_log('Encuestas: no fue posible notificar la respuesta '.$respuesta_id);
+      }
     }
     
     return $ret;

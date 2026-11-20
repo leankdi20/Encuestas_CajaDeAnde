@@ -37,6 +37,9 @@ class QueryEncuesta {
                   <input type='text' class='form-control' autocomplete='off' id='nombre' name='nombre' placeholder='Se completar&aacute; autom&aacute;ticamente seg&uacute;n la c&eacute;dula' readonly" . $nom_req . "
                          onkeypress='return (event.charCode > 64 && event.charCode < 91) || (event.charCode > 96 && event.charCode < 123) || event.charCode == 32'>
                   <small id='nombreFeedback' class='d-none'></small>
+                  <small id='tipoSocioFeedback' class='d-none'></small>
+                  <input type='hidden' id='idTipoSocio' name='idTipoSocio'>
+                  <input type='hidden' id='desTipoSocio' name='desTipoSocio'>
                 </div>
               </div>";
     }

@@ -6,10 +6,8 @@ include_once "Variables.php";
 
 switch ($_GET['accion']) {
   case "leerSocio":
-		$ret = [];
 		$cedula = $_GET['cedula'];
-		$ret["nombre"] = WebServices::nombrePorCedula($cedula);
-		$ret["correo"] = WebServices::correoPorCedula($cedula);
+		$ret = WebServices::informacionSocioPorCedula($cedula);
     echo json_encode($ret);
     break;
   case "cambiarSucursal":

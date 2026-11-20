@@ -32,7 +32,7 @@ $mensajeDB = "";
 
 
 /* API QUE CONSULTA DATOS DE LOS ACCIONISTAS */
-$_SESSION["servidor_api"] = "http://172.16.8.226/WS_PROCOBA/";
+$_SESSION["servidor_api"] = "http://desawscore2doambiente:8787/ServiciosCORE/ObtenerInformacionClienteCORE";
 /* API QUE CONSULTA DATOS DE LOS ACCIONISTAS */
 
 
